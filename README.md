@@ -1,48 +1,31 @@
 # 🚀 MonScripts
 
+![Build Status](https://img.shields.io/github/actions/workflow/status/credkellar-boop/MonScripts/ci.yml?branch=main&style=flat-square)
+![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg?style=flat-square)
+![Docker Supported](https://img.shields.io/badge/docker-supported-2496ED.svg?style=flat-square&logo=docker)
+![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)
+
 MonScripts is a lightweight, human-readable, and emoji-compatible scripting language designed to make programming accessible and fun. By removing bracket stress and mandatory indentation rules, it offers the ultimate beginner-friendly environment with shorthand codes and emojis.
 
 ---
 
 ## 🌟 Language Core Features
-- **Emoji-Powered Logic:** Code using intuitive symbols like ✏️, 🗣️, and 👂.
-- **Zero Syntax Stress:** No strict spacing or indentation rules to cause bugs.
-- **Built-in Standard Utilities:** Native systems for time delays (⏱️) and random loops (🎲).
+
+* **Emoji-Powered Logic:** Code using intuitive symbols like ✏️, 🗣️, and 👂.
+* **Zero Syntax Stress:** No strict spacing or indentation rules to cause bugs.
+* **Built-in Standard Utilities:** Native systems for time delays (⏱️) and random loops (🎲).
 
 ---
 
-## 🗺️ Master Syntax Cheat Sheet
-
-| Core Keyword | Shorthand | Emoji | Description | Example |
-| :--- | :--- | :--- | :--- | :--- |
-| `set` | `s` | ✏️ | Creates / Updates a variable | `✏️ energy = 100` |
-| `say` | `p` | 🗣️ | Prints text or data to screen | `🗣️ "System Live"` |
-| `listen` | `in` | 👂 | Pauses to read keyboard input | `👂 user_input` |
-| `loop` | `rp` | 🔁 | Repeats a block a set number of times | `🔁 5` |
-| `if` | `chk` | 🤔 | Starts a true/false condition check | `🤔 score > 90` |
-| `else` | `alt` | 🤷 | Fallback route for conditional checks | `🤷` |
-| `end` | `en` | 🛑 | Closes a loop or conditional block | `🛑` |
-| `wait` | `wt` | ⏱️ | Freezes execution for $N$ seconds | `⏱️ 2` |
-| `rand` | `rd` | 🎲 | Saves a random number ($1$ to $N$) | `🎲 roll 6` |
-
----
-
-## 🎮 Code Showcase: `casino.ms`
-
-Save the following text inside a file named `casino.ms` to test your language engine parameters:
+## 📁 Project Structure
 
 ```text
-🗣️ "=== MonScripts Mobile Casino ==="
-🗣️ "Rolling a lucky 6-sided dice..."
-
-⏱️ 2
-
-🎲 result 6
-🗣️ "Your roll result:"
-🗣️ result
-
-🤔 result > 3
-    🗣️ "🎉 You win the high-stakes round!"
-🤷
-    🗣️ "❌ Low roll. Try your luck again."
-🛑
+MonScripts/
+├── .github/workflows/
+│   └── ci.yml              # Multi-platform build & test pipeline
+├── Dockerfile              # Containerized environment setup
+├── main.py                 # Core MonScripts engine and interpreter
+├── requirements.txt        # Python dependencies (Cryptography, SpeechRecognition, etc.)
+├── game.ms                 # Example Script: Number guessing game
+├── test.ms                 # Example Script: Hidden database values test
+└── README.md               # Project documentation
