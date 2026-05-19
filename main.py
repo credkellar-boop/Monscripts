@@ -2,14 +2,37 @@ import re
 import sys
 import time
 import random
-# Import the speech library
-import speech_recognition as sr
+import os
+
+# Top-of-the-line cryptographic primitives
+try:
+    from cryptography.fernet import Fernet
+except ImportError:
+    Fernet = None
+
+try:
+    import speech_recognition as sr
+except ImportError:
+    sr = None
 
 # ==========================================
-# 1. THE COMPLETE LEXER (Now recognizes 🎙️)
+# 1. CORE DICTIONARY & LEXER CONFIGURATION
 # ==========================================
+TRANSLATION_MAP = {
+    'set':    {'short': 's',   'emoji': '✏️'},
+    'say':    {'short': 'p',   'emoji': '🗣️'},
+    'if':     {'short': 'chk', 'emoji': '🤔'},
+    'else':   {'short': 'alt', 'emoji': '🤷'},
+    'end':    {'short': 'en',  'emoji': '🛑'},
+    'loop':   {'short': 'rp',  'emoji': '🔁'},
+    'listen': {'short': 'in',  'emoji': '👂'},
+    'wait':   {'short': 'wt',  'emoji': '⏱️'},
+    'rand':   {'short': 'rd',  'emoji': '🎲'},
+    'voice':  {'short': 'v',   'emoji': '🎙️'}
+}
+
 TOKEN_SPEC = [
-    ('KEYWORD',  r'\b(set|s|if|chk|else|alt|end|en|say|p|loop|rp|listen|in|wait|wt|rand|rd|listen_voice|v_in)\b|✏️|🗣️|🤔|🤷|🛑|🔁|👂|⏱️|🎲|🎙️'), 
+    ('KEYWORD',  r'\b(set|s|if|chk|else|alt|end|en|say|p|loop|rp|listen|in|wait|wt|rand|rd|voice|v)\b|✏️|🗣️|🤔|🤷|🛑|🔁|👂|⏱️|🎲|🎙️'), 
     ('NUMBER',   r'\d+'),                  
     ('STRING',   r'"[^"]*"'),              
     ('OP',       r'[=\|<>\+\-\*\/]'),      
@@ -26,25 +49,17 @@ def tokenize(code):
         kind = match.lastgroup
         value = match.group()
         
-        if kind == 'SKIP' or kind == 'NEWLINE':
+        if kind in ['SKIP', 'NEWLINE']:
             continue
         elif kind == 'STRING':
             value = value.strip('"')
         elif kind == 'NUMBER':
             value = int(value)
         elif kind == 'KEYWORD':
-            # Normalize shorthand/emojis into base tokens
-            if value in ['set', 's', '✏️']: value = 'set'
-            elif value in ['say', 'p', '🗣️']: value = 'say'
-            elif value in ['if', 'chk', '🤔']: value = 'if'
-            elif value in ['else', 'alt', '🤷']: value = 'else'
-            elif value in ['end', 'en', '🛑']: value = 'end'
-            elif value in ['loop', 'rp', '🔁']: value = 'loop'
-            elif value in ['listen', 'in', '👂']: value = 'listen'
-            elif value in ['wait', 'wt', '⏱️']: value = 'wait'
-            elif value in ['rand', 'rd', '🎲']: value = 'rand'
-            elif value in ['listen_voice', 'v_in', '🎙️']: value = 'listen_voice'
-            
+            for base, variations in TRANSLATION_MAP.items():
+                if value in [base, variations['short'], variations['emoji']]:
+                    value = base
+                    break
         tokens.append((kind, value))
     return tokens
 
@@ -55,8 +70,7 @@ class MonScriptsEngine:
     def __init__(self):
         self.variables = {}
         self.loop_stack = []
-        # Initialize the speech recognition tool
-        self.recognizer = sr.Recognizer()
+        self.recognizer = sr.Recognizer() if sr else None
 
     def _resolve_value(self, token):
         kind, val = token
@@ -71,7 +85,6 @@ class MonScriptsEngine:
         while idx < total_tokens:
             kind, val = tokens[idx]
 
-            # --- VARIABLE SETUP ---
             if kind == 'KEYWORD' and val == 'set':
                 var_name = tokens[idx+1][1]
                 if idx + 5 < total_tokens and tokens[idx+4][0] == 'OP' and tokens[idx+4][1] in ['+', '-', '*', '/']:
@@ -90,12 +103,10 @@ class MonScriptsEngine:
                     self.variables[var_name] = self._resolve_value(tokens[idx+3])
                     idx += 4
 
-            # --- OUTPUT ENGINE ---
             elif kind == 'KEYWORD' and val == 'say':
                 print(self._resolve_value(tokens[idx+1]))
                 idx += 2
 
-            # --- TEXT INPUT ENGINE (👂) ---
             elif kind == 'KEYWORD' and val == 'listen':
                 target_variable = tokens[idx+1][1]
                 user_input = input()
@@ -104,46 +115,37 @@ class MonScriptsEngine:
                 self.variables[target_variable] = user_input
                 idx += 2
 
-            # --- NEW: VOICE INPUT ENGINE (🎙️) ---
-            elif kind == 'KEYWORD' and val == 'listen_voice':
+            elif kind == 'KEYWORD' and val == 'voice':
                 target_variable = tokens[idx+1][1]
-                print("[🎙️ Listening... Speak into your microphone now]")
-                
+                if not self.recognizer:
+                    print("[⚠️ Speech recognition package missing]")
+                    self.variables[target_variable] = "ERROR"
+                    idx += 2
+                    continue
+                print("[🎙️ Listening...]")
                 try:
                     with sr.Microphone() as source:
-                        # Adjust for background room noise
                         self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
                         audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=5)
-                        
-                    # Convert audio frequencies to text using Google's free Web Speech API
                     spoken_text = self.recognizer.recognize_google(audio)
-                    print(f"[🎙️ Recognized: \"{spoken_text}\"]")
-                    
-                    # Convert to numbers if they spoke a single digit (e.g. "5")
                     if spoken_text.isdigit():
                         spoken_text = int(spoken_text)
-                        
                     self.variables[target_variable] = spoken_text
-                except Exception as e:
-                    print(f"[⚠️ Voice Error: Couldn't understand audio or no mic detected]")
+                except Exception:
                     self.variables[target_variable] = "ERROR"
-                
                 idx += 2
 
-            # --- TIMER UTILITY ---
             elif kind == 'KEYWORD' and val == 'wait':
                 seconds = self._resolve_value(tokens[idx+1])
                 time.sleep(seconds)
                 idx += 2
 
-            # --- RANDOM NUMBER GENERATOR ---
             elif kind == 'KEYWORD' and val == 'rand':
                 target_variable = tokens[idx+1][1]
                 max_limit = self._resolve_value(tokens[idx+2])
                 self.variables[target_variable] = random.randint(1, max_limit)
                 idx += 3
 
-            # --- COUNTER LOOP SYSTEM ---
             elif kind == 'KEYWORD' and val == 'loop':
                 loop_count = self._resolve_value(tokens[idx+1])
                 idx += 2
@@ -157,7 +159,6 @@ class MonScriptsEngine:
                         elif t_kind == 'KEYWORD' and t_val == 'end': depth -= 1
                         idx += 1
 
-            # --- CONDITIONALS ---
             elif kind == 'KEYWORD' and val == 'if':
                 left = self._resolve_value(tokens[idx+1])
                 op = tokens[idx+2][1]
@@ -195,7 +196,6 @@ class MonScriptsEngine:
                     elif t_kind == 'KEYWORD' and t_val == 'end': depth -= 1
                 idx += 1
 
-            # --- SCOPE CLOSING ---
             elif kind == 'KEYWORD' and val == 'end':
                 if self.loop_stack:
                     current_loop = self.loop_stack[-1]
@@ -210,36 +210,76 @@ class MonScriptsEngine:
                 idx += 1
 
 # ==========================================
-# 3. INTERACTIVE PRODUCTION EXECUTION
+# 3. MILITARY-GRADE ENCRYPTION SUB-SYSTEM
+# ==========================================
+def run_secure_generator(file_path):
+    if not Fernet:
+        print("[❌ Security Fault: Run 'pip install cryptography' to use encryption features]")
+        return
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            raw_data = f.read()
+            
+        # Generate random high-entropy cryptographic encryption cipher key
+        secret_key = Fernet.generate_key()
+        cipher_suite = Fernet(secret_key)
+        
+        # Serialize and seal data using AES-256 standard format parameters
+        encrypted_byte_stream = cipher_suite.encrypt(raw_data.encode('utf-8'))
+        
+        output_filename = "locked_script.enc"
+        with open(output_filename, 'wb') as f_out:
+            f_out.write(encrypted_byte_stream)
+            
+        print("🔒 [MonScripts Sovereign Security Engine Activated]")
+        print(f"✔️ Successfully generated encrypted architecture payload -> '{output_filename}'")
+        print(f"🔑 CRITICAL ACCESS SECRET KEY: {secret_key.decode('utf-8')}")
+        print("⚠️ SAVE THIS KEY. The file cannot be read or processed without it.")
+    except FileNotFoundError:
+        print(f"Error: Target file script '{file_path}' not found.")
+
+def run_secure_decrypted_runtime(enc_file_path, base_key):
+    if not Fernet:
+        print("[❌ Security Fault: Cryptography library missing]")
+        return
+        
+    try:
+        with open(enc_file_path, 'rb') as f:
+            sealed_payload = f.read()
+            
+        cipher_suite = Fernet(base_key.encode('utf-8'))
+        # Perform in-memory decryption. Raw code never writes to unencrypted disk sectors!
+        decrypted_raw_script = cipher_suite.decrypt(sealed_payload).decode('utf-8')
+        
+        tokens = tokenize(decrypted_raw_script)
+        engine = MonScriptsEngine()
+        print("🔓 [Secure memory payload verified. Launching runtime environment...]")
+        engine.run(tokens)
+    except Exception:
+        print("🛡️ [CRITICAL ALERT: Access Denied. Invalid Cryptographic Key or Corrupted Payload]")
+
+# ==========================================
+# 4. MASTER PRODUCTION CLI LINK
 # ==========================================
 if __name__ == "__main__":
-    engine = MonScriptsEngine()
-    
-    if len(sys.argv) > 1:
-        file_path = sys.argv[1]
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                script_content = file.read()
-            tokens = tokenize(script_content)
-            engine.run(tokens)
-        except FileNotFoundError:
-            print(f"Error: Could not locate external script target '{file_path}'")
+    if len(sys.argv) > 2:
+        flag = sys.argv[1]
+        
+        if flag == "--encrypt":
+            run_secure_generator(sys.argv[2])
+        elif flag == "--run-secure" and len(sys.argv) == 4:
+            run_secure_decrypted_runtime(sys.argv[2], sys.argv[3])
+        else:
+            # Fallback normal plain file execution
+            try:
+                with open(sys.argv[2], 'r', encoding='utf-8') as f:
+                    tokens = tokenize(f.read())
+                MonScriptsEngine().run(tokens)
+            except FileNotFoundError:
+                print("Error: Target file not found.")
     else:
-        # Showcase sandbox script using Voice Recognition!
-        voice_test_script = """
-        🗣️ "=== MonScripts Voice Authentication ==="
-        🗣️ "Say your authorization code loud and clear..."
-        
-        🎙️ speech_input
-        
-        🗣️ "Processing voice signal data..."
-        ⏱️ 1
-        
-        🤔 speech_input = 7
-            🗣️ "🎉 Match confirmed! Command interface unlocked."
-        🤷
-            🗣️ "❌ Voice match mismatch. Audio data logged."
-        🛑
-        """
-        tokens = tokenize(voice_test_script)
-        engine.run(tokens)
+        # Default local sandbox execution mode
+        fallback_script = '🗣️ "Sovereign Framework Online. No parameters passed."'
+        tokens = tokenize(fallback_script)
+        MonScriptsEngine().run(tokens)
