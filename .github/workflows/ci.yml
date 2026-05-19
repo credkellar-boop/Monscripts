@@ -1,0 +1,40 @@
+name: MonScripts Engine CI
+
+# Trigger this pipeline on every git push or pull request to the main branch
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Download your repository code into the runner
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Step 2: Set up a clean Python sandbox environment
+    - name: Set up Python
+      uses: actions/preferred/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    # Step 3: Pre-install the core audio dependencies needed for voice matching
+    - name: Install System Audio Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y portaudio19-dev python3-pyaudio
+
+    # Step 4: Install your interpreter's external libraries
+    - name: Install Python Package Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install SpeechRecognition pyaudio
+
+    # Step 5: Execute your script fallback sandbox test suite automatically!
+    - name: Run MonScripts Engine Test Suite
+      run: |
+        python main.py
