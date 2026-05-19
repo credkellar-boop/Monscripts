@@ -1,31 +1,48 @@
 # 🚀 MonScripts
 
-A lightweight, human-readable scripting language designed to be even easier to learn than Python. MonScripts eliminates complex bracket spacing and indentation rules, allowing you to code using intuitive abbreviations or pure emojis.
+MonScripts is a lightweight, human-readable, and emoji-compatible scripting language designed to make programming accessible and fun. By removing bracket stress and mandatory indentation rules, it offers the ultimate beginner-friendly environment with shorthand codes and emojis.
 
-## 🌟 Features
-- **Zero Indentation Stress:** No structural whitespace or indentation errors.
-- **Emoji Support:** Write fully executable code using your favorite symbols.
-- **Ultra Lightweight:** Runs instantly inside a fast, isolated Python interpreter pipeline.
+---
 
-## 🗺️ Syntax Mapping
+## 🌟 Language Core Features
+- **Emoji-Powered Logic:** Code using intuitive symbols like ✏️, 🗣️, and 👂.
+- **Zero Syntax Stress:** No strict spacing or indentation rules to cause bugs.
+- **Built-in Standard Utilities:** Native systems for time delays (⏱️) and random loops (🎲).
 
-| Standard | Short | Emoji | Description |
-| :--- | :--- | :--- | :--- |
-| `set` | `s` | ✏️ | Creates or updates a variable |
-| `say` | `p` | 🗣️ | Outputs text or data to the screen |
-| `if` | `chk` | 🤔 | Begins a conditional check block |
-| `else` | `alt` | 🤷 | Executes fallback logic if conditions fail |
-| `end` | `en` | 🛑 | Closes out an active conditional block |
+---
 
-## 💻 Code Example
+## 🗺️ Master Syntax Cheat Sheet
+
+| Core Keyword | Shorthand | Emoji | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `set` | `s` | ✏️ | Creates / Updates a variable | `✏️ energy = 100` |
+| `say` | `p` | 🗣️ | Prints text or data to screen | `🗣️ "System Live"` |
+| `listen` | `in` | 👂 | Pauses to read keyboard input | `👂 user_input` |
+| `loop` | `rp` | 🔁 | Repeats a block a set number of times | `🔁 5` |
+| `if` | `chk` | 🤔 | Starts a true/false condition check | `🤔 score > 90` |
+| `else` | `alt` | 🤷 | Fallback route for conditional checks | `🤷` |
+| `end` | `en` | 🛑 | Closes a loop or conditional block | `🛑` |
+| `wait` | `wt` | ⏱️ | Freezes execution for $N$ seconds | `⏱️ 2` |
+| `rand` | `rd` | 🎲 | Saves a random number ($1$ to $N$) | `🎲 roll 6` |
+
+---
+
+## 🎮 Code Showcase: `casino.ms`
+
+Save the following text inside a file named `casino.ms` to test your language engine parameters:
 
 ```text
-✏️ wallet = 50
-✏️ cost = 30
-set balance = wallet - cost
+🗣️ "=== MonScripts Mobile Casino ==="
+🗣️ "Rolling a lucky 6-sided dice..."
 
-🤔 balance > 10
-    🗣️ "You have plenty of funds left!"
+⏱️ 2
+
+🎲 result 6
+🗣️ "Your roll result:"
+🗣️ result
+
+🤔 result > 3
+    🗣️ "🎉 You win the high-stakes round!"
 🤷
-    p "Warning: Low balance."
+    🗣️ "❌ Low roll. Try your luck again."
 🛑
