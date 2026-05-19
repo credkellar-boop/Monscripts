@@ -129,26 +129,33 @@ class UnifiedInterpreter:
                 idx += 1
             else:
                 idx += 1
-
 # ==========================================
-# 3. TEST SUITE EXECUTION
+# 3. PRODUCTION RUNNER ENGINE
 # ==========================================
-# Testing the new Emojis and Abbreviations!
-source_script = """
-✏️ system_a = 45
-s system_b = 55
-set unified_metric = system_a + system_b
+import sys
 
-🗣️ "--- Unified Output Metric Summary ---"
-p unified_metric
-
-🤔 unified_metric > 90
-    🗣️ "Status: Metric threshold exceeded."
-🤷
-    p "Status: Operational baseline nominal."
-🛑
-"""
-
-tokens = tokenize(source_script)
-engine = UnifiedInterpreter()
-engine.run(tokens)
+if __name__ == "__main__":
+    interpreter = UnifiedInterpreter()
+    
+    # Check if a file was passed as an argument (e.g., python main.py myscript.ms)
+    if len(sys.argv) > 1:
+        file_path = sys.argv[1]
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                script_content = file.read()
+            print(f"--- Running {file_path} ---")
+            tokens = tokenize(script_content)
+            interpreter.run(tokens)
+        except FileNotFoundError:
+            print(f"Error: The file '{file_path}' could not be found.")
+    else:
+        # Fallback inline test script if no file is provided
+        fallback_script = """
+        ✏️ score = 95
+        🤔 score > 90
+            🗣️ "Success! MonScripts is running perfectly."
+        🛑
+        """
+        print("--- Running Local Sandbox Script ---")
+        tokens = tokenize(fallback_script)
+        interpreter.run(tokens)
